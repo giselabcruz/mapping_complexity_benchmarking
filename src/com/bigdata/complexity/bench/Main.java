@@ -7,16 +7,16 @@ import org.knowm.xchart.style.markers.SeriesMarkers;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.Arrays;
-;
 
 public class Main {
 
     private static final int REPEATS = 15;
 
+    private static final String DEVICE = "Asus_Vivobook";
+
     public static void main(String[] args) throws IOException {
         int[] sizes = {1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000, 256000, 512000, 1024000, 2048000, 4096000};
         double[] xs = Arrays.stream(sizes).asDoubleStream().toArray();
-        String device = "Asus Vibook. OS: Ubuntu";
 
         double[] meanLogN = new double[sizes.length];
         double[] medianLogN = new double[sizes.length];
@@ -26,7 +26,6 @@ public class Main {
 
         double[] meanNLogN = new double[sizes.length];
         double[] medianNLogN = new double[sizes.length];
-
 
         for (int i = 0; i < sizes.length; i++) {
             int n = sizes[i];
@@ -56,17 +55,17 @@ public class Main {
         Path graphicsDir = Paths.get("src/com/bigdata/complexity/bench/plots");
         Files.createDirectories(graphicsDir);
 
-        showAndSaveChart("O(log n) — Asus: Ubuntu", xs, meanLogN, medianLogN, device,
-                graphicsDir.resolve("logn_plot_ubuntu.png").toString());
+        showAndSaveChart("O(log n)", xs, meanLogN, medianLogN,
+                graphicsDir.resolve("logn_plot_" + DEVICE + ".png").toString());
 
-        showAndSaveChart("O(n) — Asus: Ubuntu", xs, meanN, medianN, device,
-                graphicsDir.resolve("n_plot_ubuntu.png").toString());
+        showAndSaveChart("O(n)", xs, meanN, medianN,
+                graphicsDir.resolve("n_plot_" + DEVICE + ".png").toString());
 
-        showAndSaveChart("O(n log n) — Asus: Ubuntu", xs, meanNLogN, medianNLogN, device,
-                graphicsDir.resolve("nlogn_plot_ubuntu.png").toString());
+        showAndSaveChart("O(n log n)", xs, meanNLogN, medianNLogN,
+                graphicsDir.resolve("nlogn_plot_" + DEVICE + ".png").toString());
     }
 
-        private static double median(long[] arr) {
+    private static double median(long[] arr) {
         Arrays.sort(arr);
         int mid = arr.length / 2;
         if (arr.length % 2 == 0) {
@@ -77,11 +76,11 @@ public class Main {
     }
 
     private static void showAndSaveChart(String title, double[] x, double[] mean, double[] median,
-                                         String device, String filePath) throws IOException {
+                                         String filePath) throws IOException {
 
         XYChart chart = new XYChartBuilder()
                 .width(800).height(600)
-                .title(title + " — " + device)
+                .title(title + " — " + DEVICE)
                 .xAxisTitle("n")
                 .yAxisTitle("Tiempo (ms)")
                 .build();
@@ -91,7 +90,6 @@ public class Main {
 
         XYSeries sMedian = chart.addSeries("Median", x, median);
         sMedian.setMarker(SeriesMarkers.DIAMOND);
-
 
         chart.getStyler().setDefaultSeriesRenderStyle(XYSeries.XYSeriesRenderStyle.Line);
         chart.getStyler().setLegendPosition(Styler.LegendPosition.InsideNE);
