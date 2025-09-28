@@ -32,6 +32,7 @@ public class ComplexityBench {
         return t1 - t0;
     }
 
+
     // O(n log n): ordenar
     public static long timeSort(int n) {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -48,4 +49,15 @@ public class ComplexityBench {
     public static double toMillis(long nanos) {
         return nanos / 1_000_000.0;
     }
+
+    public static double standardDeviation(long[] arr) {
+        double mean = Arrays.stream(arr).mapToDouble(ComplexityBench::toMillis).average().orElse(0);
+        double sumSq = 0;
+        for (long v : arr) {
+            double ms = ComplexityBench.toMillis(v);
+            sumSq += (ms - mean) * (ms - mean);
+        }
+        return Math.sqrt(sumSq / arr.length);
+    }
+
 }

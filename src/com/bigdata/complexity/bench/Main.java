@@ -7,44 +7,81 @@ import org.knowm.xchart.style.markers.SeriesMarkers;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.Arrays;
+;
 
 public class Main {
 
+    private static final int REPEATS = 15;
+
     public static void main(String[] args) throws IOException {
         int[] sizes = {1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000, 256000, 512000, 1024000, 2048000, 4096000};
-
         double[] xs = Arrays.stream(sizes).asDoubleStream().toArray();
-        double[] yLogN  = new double[sizes.length];
-        double[] yN     = new double[sizes.length];
-        double[] yNLogN = new double[sizes.length];
+        String device = "Asus Vibook. OS: Ubuntu";
 
-        String device = "MacBook Air M3";
+        double[] meanLogN = new double[sizes.length];
+        double[] medianLogN = new double[sizes.length];
+
+        double[] meanN = new double[sizes.length];
+        double[] medianN = new double[sizes.length];
+
+        double[] meanNLogN = new double[sizes.length];
+        double[] medianNLogN = new double[sizes.length];
+
+        double[] sdLogN = new double[sizes.length];
+        double[] sdN = new double[sizes.length];
+        double[] sdNLogN = new double[sizes.length];
 
         for (int i = 0; i < sizes.length; i++) {
             int n = sizes[i];
-            yLogN[i]  = ComplexityBench.toMillis(ComplexityBench.timeBinarySearch(n));
-            yN[i]     = ComplexityBench.toMillis(ComplexityBench.timeLinearSum(n));
-            yNLogN[i] = ComplexityBench.toMillis(ComplexityBench.timeSort(n));
 
-            System.out.printf("n=%d | O(log n)=%.3f ms | O(n)=%.3f ms | O(n log n)=%.3f ms%n",
-                    n, yLogN[i], yN[i], yNLogN[i]);
+            long[] logNTimes = new long[REPEATS];
+            long[] nTimes = new long[REPEATS];
+            long[] nLogNTimes = new long[REPEATS];
+
+            for (int r = 0; r < REPEATS; r++) {
+                logNTimes[r] = ComplexityBench.timeBinarySearch(n);
+                nTimes[r] = ComplexityBench.timeLinearSum(n);
+                nLogNTimes[r] = ComplexityBench.timeSort(n);
+            }
+
+            meanLogN[i] = Arrays.stream(logNTimes).mapToDouble(ComplexityBench::toMillis).average().orElse(0);
+            meanN[i] = Arrays.stream(nTimes).mapToDouble(ComplexityBench::toMillis).average().orElse(0);
+            meanNLogN[i] = Arrays.stream(nLogNTimes).mapToDouble(ComplexityBench::toMillis).average().orElse(0);
+
+            medianLogN[i] = median(logNTimes);
+            medianN[i] = median(nTimes);
+            medianNLogN[i] = median(nLogNTimes);
+
+            System.out.printf("n=%d | O(log n) mean=%.3f ms median=%.3f ms | O(n) mean=%.3f ms median=%.3f ms | O(n log n) mean=%.3f ms median=%.3f ms%n",
+                    n, meanLogN[i], medianLogN[i], meanN[i], medianN[i], meanNLogN[i], medianNLogN[i]);
         }
 
         Path graphicsDir = Paths.get("src/com/bigdata/complexity/bench/plots");
         Files.createDirectories(graphicsDir);
 
-        showAndSaveChart("O(log n) — binarySearch", xs, yLogN, device,
-                graphicsDir.resolve("logn_mac_m3.png").toString());
+        showAndSaveChart("O(log n) — Asus: Ubuntu", xs, meanLogN, medianLogN, sdLogN, device,
+                graphicsDir.resolve("logn_plot_ubuntu.png").toString());
 
-        showAndSaveChart("O(n) — linearSum", xs, yN, device,
-                graphicsDir.resolve("linear_mac_m3.png").toString());
+        showAndSaveChart("O(n) — Asus: Ubuntu", xs, meanN, medianN, sdN, device,
+                graphicsDir.resolve("n_plot_ubuntu.png").toString());
 
-        showAndSaveChart("O(n log n) — sort", xs, yNLogN, device,
-                graphicsDir.resolve("nlogn_mac_m3.png").toString());
+        showAndSaveChart("O(n log n) — Asus: Ubuntu", xs, meanNLogN, medianNLogN, sdNLogN, device,
+                graphicsDir.resolve("nlogn_plot_ubuntu.png").toString());
     }
 
-    private static void showAndSaveChart(String title, double[] x, double[] y,
+        private static double median(long[] arr) {
+        Arrays.sort(arr);
+        int mid = arr.length / 2;
+        if (arr.length % 2 == 0) {
+            return ComplexityBench.toMillis(arr[mid - 1] + arr[mid]) / 2.0;
+        } else {
+            return ComplexityBench.toMillis(arr[mid]);
+        }
+    }
+
+    private static void showAndSaveChart(String title, double[] x, double[] mean, double[] median, double[] sd,
                                          String device, String filePath) throws IOException {
+
         XYChart chart = new XYChartBuilder()
                 .width(800).height(600)
                 .title(title + " — " + device)
@@ -52,8 +89,12 @@ public class Main {
                 .yAxisTitle("Tiempo (ms)")
                 .build();
 
-        XYSeries s = chart.addSeries("tiempo", x, y);
-        s.setMarker(SeriesMarkers.CIRCLE);
+        XYSeries sMean = chart.addSeries("Mean", x, mean);
+        sMean.setMarker(SeriesMarkers.CIRCLE);
+
+        XYSeries sMedian = chart.addSeries("Median", x, median);
+        sMedian.setMarker(SeriesMarkers.DIAMOND);
+
 
         chart.getStyler().setDefaultSeriesRenderStyle(XYSeries.XYSeriesRenderStyle.Line);
         chart.getStyler().setLegendPosition(Styler.LegendPosition.InsideNE);
@@ -62,6 +103,6 @@ public class Main {
 
         new SwingWrapper<>(chart).displayChart();
         BitmapEncoder.saveBitmap(chart, filePath, BitmapEncoder.BitmapFormat.PNG);
-        System.out.println("Guardado en: " + filePath);
+        System.out.println("Saved chart: " + filePath);
     }
 }
