@@ -27,9 +27,6 @@ public class Main {
         double[] meanNLogN = new double[sizes.length];
         double[] medianNLogN = new double[sizes.length];
 
-        double[] sdLogN = new double[sizes.length];
-        double[] sdN = new double[sizes.length];
-        double[] sdNLogN = new double[sizes.length];
 
         for (int i = 0; i < sizes.length; i++) {
             int n = sizes[i];
@@ -59,13 +56,13 @@ public class Main {
         Path graphicsDir = Paths.get("src/com/bigdata/complexity/bench/plots");
         Files.createDirectories(graphicsDir);
 
-        showAndSaveChart("O(log n) — Asus: Ubuntu", xs, meanLogN, medianLogN, sdLogN, device,
+        showAndSaveChart("O(log n) — Asus: Ubuntu", xs, meanLogN, medianLogN, device,
                 graphicsDir.resolve("logn_plot_ubuntu.png").toString());
 
-        showAndSaveChart("O(n) — Asus: Ubuntu", xs, meanN, medianN, sdN, device,
+        showAndSaveChart("O(n) — Asus: Ubuntu", xs, meanN, medianN, device,
                 graphicsDir.resolve("n_plot_ubuntu.png").toString());
 
-        showAndSaveChart("O(n log n) — Asus: Ubuntu", xs, meanNLogN, medianNLogN, sdNLogN, device,
+        showAndSaveChart("O(n log n) — Asus: Ubuntu", xs, meanNLogN, medianNLogN, device,
                 graphicsDir.resolve("nlogn_plot_ubuntu.png").toString());
     }
 
@@ -79,7 +76,7 @@ public class Main {
         }
     }
 
-    private static void showAndSaveChart(String title, double[] x, double[] mean, double[] median, double[] sd,
+    private static void showAndSaveChart(String title, double[] x, double[] mean, double[] median,
                                          String device, String filePath) throws IOException {
 
         XYChart chart = new XYChartBuilder()
