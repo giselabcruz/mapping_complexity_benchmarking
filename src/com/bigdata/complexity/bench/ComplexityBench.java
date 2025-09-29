@@ -5,7 +5,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class ComplexityBench {
 
-    // O(log n): búsqueda binaria
+    // O(log n): Binary search
     public static long timeBinarySearch(int n) {
         int[] sorted = new int[n];
         for (int i = 0; i < n; i++) sorted[i] = i;
@@ -17,7 +17,7 @@ public class ComplexityBench {
         return t1 - t0;
     }
 
-    // O(n): suma lineal
+    // O(n): Linear sum
     public static long timeLinearSum(int n) {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
         int[] arr = new int[n];
@@ -33,7 +33,7 @@ public class ComplexityBench {
     }
 
 
-    // O(n log n): ordenar
+    // O(n log n): Sort
     public static long timeSort(int n) {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
         int[] arr = new int[n];
@@ -45,19 +45,9 @@ public class ComplexityBench {
         return t1 - t0;
     }
 
-    // Conversión ns -> ms
+    // Conversion ns -> ms
     public static double toMillis(long nanos) {
         return nanos / 1_000_000.0;
-    }
-
-    public static double standardDeviation(long[] arr) {
-        double mean = Arrays.stream(arr).mapToDouble(ComplexityBench::toMillis).average().orElse(0);
-        double sumSq = 0;
-        for (long v : arr) {
-            double ms = ComplexityBench.toMillis(v);
-            sumSq += (ms - mean) * (ms - mean);
-        }
-        return Math.sqrt(sumSq / arr.length);
     }
 
 }
