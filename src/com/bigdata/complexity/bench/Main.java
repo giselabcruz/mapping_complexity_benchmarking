@@ -8,10 +8,9 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.Arrays;
 
-
 public class Main {
 
-    private static final int REPEATS = 15;
+    private static final int REPEATS = 100; // Se guardarán 15 resultados, pero corremos 16 y descartamos el primero
     private static final String DEVICE = "LG Gram 16Z90R_Windows_11";
 
     public static void main(String[] args) throws IOException {
@@ -20,12 +19,25 @@ public class Main {
 
         double[] meanLogN = new double[sizes.length];
         double[] medianLogN = new double[sizes.length];
+        double[] stdLogN = new double[sizes.length];   // <-- desviación estándar
 
         double[] meanN = new double[sizes.length];
         double[] medianN = new double[sizes.length];
+        double[] stdN = new double[sizes.length];      // <-- desviación estándar
 
         double[] meanNLogN = new double[sizes.length];
         double[] medianNLogN = new double[sizes.length];
+        double[] stdNLogN = new double[sizes.length];  // <-- desviación estándar
+
+        // Warm-up con varios tamaños
+        int[] warmupSizes = {1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000, 256000, 512000, 1024000, 2048000, 4096000};
+        for (int s : warmupSizes) {
+            for (int w = 0; w < 5; w++) {
+                ComplexityBench.timeLinearSum(s);
+                ComplexityBench.timeBinarySearch(s);
+                ComplexityBench.timeSort(s);
+            }
+        }
 
         for (int i = 0; i < sizes.length; i++) {
             int n = sizes[i];
@@ -34,12 +46,21 @@ public class Main {
             long[] nTimes = new long[REPEATS];
             long[] nLogNTimes = new long[REPEATS];
 
-            for (int r = 0; r < REPEATS; r++) {
-                nTimes[r] = ComplexityBench.timeLinearSum(n); //O(n)
-                logNTimes[r] = ComplexityBench.timeBinarySearch(n); //O(Log n)
-                nLogNTimes[r] = ComplexityBench.timeSort(n); //O(nLog n)
+            System.gc();
+            // Hacemos REPEATS+5 y descartamos los primos
+            for (int r = 0; r < REPEATS + 3; r++) {
+                long tN = ComplexityBench.timeLinearSum(n);       // O(n)
+                long tLogN = ComplexityBench.timeBinarySearch(n); // O(log n)
+                long tNLogN = ComplexityBench.timeSort(n);        // O(n log n)
+
+                if (r >= 3) { // descartar las 3 primeras
+                    nTimes[r - 3] = tN;
+                    logNTimes[r - 3] = tLogN;
+                    nLogNTimes[r - 3] = tNLogN;
+                }
             }
 
+            // Estadísticas
             meanLogN[i] = Arrays.stream(logNTimes).mapToDouble(ComplexityBench::toMillis).average().orElse(0);
             meanN[i] = Arrays.stream(nTimes).mapToDouble(ComplexityBench::toMillis).average().orElse(0);
             meanNLogN[i] = Arrays.stream(nLogNTimes).mapToDouble(ComplexityBench::toMillis).average().orElse(0);
@@ -48,14 +69,25 @@ public class Main {
             medianN[i] = median(nTimes);
             medianNLogN[i] = median(nLogNTimes);
 
-            System.out.printf("n=%d | O(log n) mean=%.3f ms median=%.3f ms | O(n) mean=%.3f ms median=%.3f ms | O(n log n) mean=%.3f ms median=%.3f ms%n",
-                    n, meanLogN[i], medianLogN[i], meanN[i], medianN[i], meanNLogN[i], medianNLogN[i]);
+            stdLogN[i] = stdDev(logNTimes);
+            stdN[i] = stdDev(nTimes);
+            stdNLogN[i] = stdDev(nLogNTimes);
+
+            System.out.printf(
+                    "n=%d | O(log n) mean=%.3f ms median=%.3f ms σ=%.3f | " +
+                            "O(n) mean=%.3f ms median=%.3f ms σ=%.3f | " +
+                            "O(n log n) mean=%.3f ms median=%.3f ms σ=%.3f%n",
+                    n,
+                    meanLogN[i], medianLogN[i], stdLogN[i],
+                    meanN[i], medianN[i], stdN[i],
+                    meanNLogN[i], medianNLogN[i], stdNLogN[i]
+            );
         }
 
         Path graphicsDir = Paths.get("src/com/bigdata/complexity/bench/plots");
         Files.createDirectories(graphicsDir);
 
-        // Individual charts
+        // Gráficas individuales
         showAndSaveChart("O(log n)", xs, meanLogN, medianLogN,
                 graphicsDir.resolve("logn_plot_" + DEVICE + ".png").toString());
         showAndSaveChart("O(n)", xs, meanN, medianN,
@@ -63,7 +95,7 @@ public class Main {
         showAndSaveChart("O(n log n)", xs, meanNLogN, medianNLogN,
                 graphicsDir.resolve("nlogn_plot_" + DEVICE + ".png").toString());
 
-        // Combined chart of means
+        // Gráfica combinada
         showAndSaveCombinedChart(xs, meanLogN, meanN, meanNLogN,
                 graphicsDir.resolve("combined_mean_plot_" + DEVICE + ".png").toString());
     }
@@ -78,6 +110,17 @@ public class Main {
         }
     }
 
+    // Nueva función para desviación estándar
+    private static double stdDev(long[] arr) {
+        double mean = Arrays.stream(arr).mapToDouble(ComplexityBench::toMillis).average().orElse(0);
+        double variance = Arrays.stream(arr)
+                .mapToDouble(ComplexityBench::toMillis)
+                .map(v -> Math.pow(v - mean, 2))
+                .average()
+                .orElse(0);
+        return Math.sqrt(variance);
+    }
+
     private static void showAndSaveChart(String title, double[] x, double[] mean, double[] median,
                                          String filePath) throws IOException {
 
@@ -85,10 +128,9 @@ public class Main {
                 .width(800).height(600)
                 .title(title + " — " + DEVICE)
                 .xAxisTitle("n")
-                .yAxisTitle("Time (µs)") // Changed to microseconds
+                .yAxisTitle("Time (µs)")
                 .build();
 
-        // Convert ms to µs for better visibility
         double[] meanMicro = Arrays.stream(mean).map(v -> v * 1000).toArray();
         double[] medianMicro = Arrays.stream(median).map(v -> v * 1000).toArray();
 
@@ -101,18 +143,17 @@ public class Main {
         chart.getStyler().setDefaultSeriesRenderStyle(XYSeries.XYSeriesRenderStyle.Line);
         chart.getStyler().setLegendPosition(Styler.LegendPosition.InsideNW);
         chart.getStyler().setXAxisDecimalPattern("####");
-        chart.getStyler().setYAxisDecimalPattern("###.####"); // More precision for small values
+        chart.getStyler().setYAxisDecimalPattern("###.####");
 
-        chart.getStyler().setXAxisMax(Double.valueOf(4_000_000.0)); // Limit X axis
+        chart.getStyler().setXAxisMax(Double.valueOf(4_000_000.0));
         chart.getStyler().setYAxisMin(Double.valueOf(1.0));
+        chart.getStyler().setYAxisMin(Double.valueOf(0.0));
 
         new SwingWrapper<>(chart).displayChart();
         BitmapEncoder.saveBitmap(chart, filePath, BitmapEncoder.BitmapFormat.PNG);
         System.out.println("Saved chart: " + filePath);
     }
 
-
-    // New function: displays the three means together in a single chart
     private static void showAndSaveCombinedChart(double[] x, double[] meanLogN, double[] meanN, double[] meanNLogN,
                                                  String filePath) throws IOException {
 
@@ -137,7 +178,6 @@ public class Main {
         chart.getStyler().setXAxisDecimalPattern("####");
         chart.getStyler().setYAxisDecimalPattern("###.##");
 
-        // Limit X axis to 1,000,000
         chart.getStyler().setXAxisMax(Double.valueOf(1_000_000.0));
         chart.getStyler().setYAxisMax(Double.valueOf(100.0));
 
