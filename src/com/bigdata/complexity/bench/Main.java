@@ -10,7 +10,7 @@ import java.util.Arrays;
 
 public class Main {
 
-    private static final int REPEATS = 100; // Se guardarán 15 resultados, pero corremos 16 y descartamos el primero
+    private static final int REPEATS = 100; // 15 results will be kept, but we run 16 and discard the first
     private static final String DEVICE = "LG Gram 16Z90R_Windows_11";
 
     public static void main(String[] args) throws IOException {
@@ -19,17 +19,17 @@ public class Main {
 
         double[] meanLogN = new double[sizes.length];
         double[] medianLogN = new double[sizes.length];
-        double[] stdLogN = new double[sizes.length];   // <-- desviación estándar
+        double[] stdLogN = new double[sizes.length];   // <-- standard deviation
 
         double[] meanN = new double[sizes.length];
         double[] medianN = new double[sizes.length];
-        double[] stdN = new double[sizes.length];      // <-- desviación estándar
+        double[] stdN = new double[sizes.length];      // <-- standard deviation
 
         double[] meanNLogN = new double[sizes.length];
         double[] medianNLogN = new double[sizes.length];
-        double[] stdNLogN = new double[sizes.length];  // <-- desviación estándar
+        double[] stdNLogN = new double[sizes.length];  // <-- standard deviation
 
-        // Warm-up con varios tamaños
+        // Warm-up with multiple sizes
         int[] warmupSizes = {1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000, 256000, 512000, 1024000, 2048000, 4096000};
         for (int s : warmupSizes) {
             for (int w = 0; w < 5; w++) {
@@ -47,20 +47,20 @@ public class Main {
             long[] nLogNTimes = new long[REPEATS];
 
             System.gc();
-            // Hacemos REPEATS+5 y descartamos los primos
+            // Run REPEATS+3 and discard the first three
             for (int r = 0; r < REPEATS + 3; r++) {
                 long tN = ComplexityBench.timeLinearSum(n);       // O(n)
                 long tLogN = ComplexityBench.timeBinarySearch(n); // O(log n)
                 long tNLogN = ComplexityBench.timeSort(n);        // O(n log n)
 
-                if (r >= 3) { // descartar las 3 primeras
+                if (r >= 3) { // discard the first 3
                     nTimes[r - 3] = tN;
                     logNTimes[r - 3] = tLogN;
                     nLogNTimes[r - 3] = tNLogN;
                 }
             }
 
-            // Estadísticas
+            // Statistics
             meanLogN[i] = Arrays.stream(logNTimes).mapToDouble(ComplexityBench::toMillis).average().orElse(0);
             meanN[i] = Arrays.stream(nTimes).mapToDouble(ComplexityBench::toMillis).average().orElse(0);
             meanNLogN[i] = Arrays.stream(nLogNTimes).mapToDouble(ComplexityBench::toMillis).average().orElse(0);
@@ -87,7 +87,7 @@ public class Main {
         Path graphicsDir = Paths.get("src/com/bigdata/complexity/bench/plots");
         Files.createDirectories(graphicsDir);
 
-        // Gráficas individuales
+        // Individual charts
         showAndSaveChart("O(log n)", xs, meanLogN, medianLogN,
                 graphicsDir.resolve("logn_plot_" + DEVICE + ".png").toString());
         showAndSaveChart("O(n)", xs, meanN, medianN,
@@ -95,7 +95,7 @@ public class Main {
         showAndSaveChart("O(n log n)", xs, meanNLogN, medianNLogN,
                 graphicsDir.resolve("nlogn_plot_" + DEVICE + ".png").toString());
 
-        // Gráfica combinada
+        // Combined chart
         showAndSaveCombinedChart(xs, meanLogN, meanN, meanNLogN,
                 graphicsDir.resolve("combined_mean_plot_" + DEVICE + ".png").toString());
     }
@@ -110,7 +110,7 @@ public class Main {
         }
     }
 
-    // Nueva función para desviación estándar
+    // New function for standard deviation
     private static double stdDev(long[] arr) {
         double mean = Arrays.stream(arr).mapToDouble(ComplexityBench::toMillis).average().orElse(0);
         double variance = Arrays.stream(arr)
@@ -146,7 +146,6 @@ public class Main {
         chart.getStyler().setYAxisDecimalPattern("###.####");
 
         chart.getStyler().setXAxisMax(Double.valueOf(4_000_000.0));
-        chart.getStyler().setYAxisMin(Double.valueOf(1.0));
         chart.getStyler().setYAxisMin(Double.valueOf(0.0));
 
         new SwingWrapper<>(chart).displayChart();
