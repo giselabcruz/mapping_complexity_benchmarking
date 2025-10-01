@@ -11,7 +11,7 @@ import java.util.Arrays;
 public class Main {
 
     private static final int REPEATS = 100; // 15 results will be kept, but we run 16 and discard the first
-    private static final String DEVICE = "LG Gram 16Z90R_Windows_11";
+    private static final String DEVICE = "Macbook_Air_M3_MacOS_Tahoe";
 
     public static void main(String[] args) throws IOException {
         int[] sizes = {1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000, 256000, 512000, 1024000, 2048000, 4096000};
